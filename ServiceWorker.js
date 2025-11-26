@@ -1,9 +1,9 @@
-const cacheName = "MainPlayer-Aviator-0.2.64";
+const cacheName = "MainPlayer-Aviator-0.2.66";
 const contentToCache = [
-    "Build/Aviator_0.2.64_OK.loader.js",
-    "Build/Aviator_0.2.64_OK.framework.js",
-    "Build/Aviator_0.2.64_OK.data",
-    "Build/Aviator_0.2.64_OK.wasm",
+    "Build/Aviator_0.2.66_OK.loader.js",
+    "Build/Aviator_0.2.66_OK.framework.js",
+    "Build/Aviator_0.2.66_OK.data",
+    "Build/Aviator_0.2.66_OK.wasm",
     "TemplateData/style.css"
 
 ];
