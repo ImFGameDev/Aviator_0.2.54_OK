@@ -85,24 +85,38 @@
 <!-- connect.js (виджеты OK) -->
 <script src="https://connect.ok.ru/connect.js"></script>
 
-<!-- optional: примерная загрузка oksdk (если у вас своя сборка - замените URL) -->
+
 <script>
-    // Значения из OkService (проверьте, если нужно заменить)
-    window.OK_APP_ID = "512003543994";
-    window.OK_APP_KEY = "CLLEBLMGDIHBABABA";
+    (function(){
+        // Значения по умолчанию (можно переопределить выше в другом скрипте/шаблоне)
+        window.OK_APP_ID = window.OK_APP_ID || "512003543994";
+        window.OK_APP_KEY = window.OK_APP_KEY || "CLLEBLMGDIHBABABA";
 
-    window.OKSDK_CONFIG = {
-        appId: window.OK_APP_ID,
-        appKey: window.OK_APP_KEY
-    };
+        // Предзагрузим библиотеку OK SDK, но не вызываем init() — это сделает jslib.
+        try {
+            if (!document.querySelector('script[data-oksdk-preload]')) {
+                var oksdkUrl = "https://cdn.jsdelivr.net/gh/odnoklassniki/ok-js-sdk@18.4/oksdk.js";
+                var s = document.createElement('script');
+                s.src = oksdkUrl;
+                s.async = true;
+                s.setAttribute('data-oksdk-preload', '1');
 
-    (function loadOkOptionalSdk() {
-        // Замените URL на вашу стабильную версию SDK при необходимости
-        var oksdkUrl = "https://cdn.jsdelivr.net/gh/odnoklassniki/ok-js-sdk@master/oksdk.js";
-        var s = document.createElement('script'); s.src = oksdkUrl; s.async = true;
-        s.onload = function(){ console.log("oksdk loaded from", oksdkUrl); /* SDK загружен — инициализация SDK выполняется из jslib/Unity */ };
-        s.onerror = function(){ console.warn("Failed to load oksdk from", oksdkUrl); };
-        document.head.appendChild(s);
+                s.onload = function() {
+                    console.log("oksdk preloaded from", oksdkUrl);
+                    if (typeof window._sendUnityMessageSafe === 'function') {
+                        window._sendUnityMessageSafe('OkServiceMono', 'OnSdkScriptLoaded', JSON.stringify({loaded:true}));
+                    }
+                };
+
+                s.onerror = function() {
+                    console.warn("Failed to preload oksdk from", oksdkUrl);
+                };
+
+                document.head.appendChild(s);
+            }
+        } catch (e) {
+            console.warn("oksdk preloader error", e);
+        }
     })();
 </script>
 
@@ -117,10 +131,19 @@
     // IndexedDB
     window.idb = null;
     let indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
-    let openReq = indexedDB.open("RA1", 2);
-    openReq.onupgradeneeded = function() { let db = openReq.result; if (!db.objectStoreNames.contains("Saves")) db.createObjectStore("Saves", {keyPath: "id"}); };
-    openReq.onsuccess = function() { window.idb = openReq.result; };
-    openReq.onerror = function(e) { console.warn("IDB open error", e); };
+
+    if (indexedDB) {
+        let openReq = indexedDB.open("RA1", 2);
+        openReq.onupgradeneeded = function() {
+            let db = openReq.result;
+            if (!db.objectStoreNames.contains("Saves")) db.createObjectStore("Saves", {keyPath: "id"});
+        };
+        openReq.onsuccess = function() { window.idb = openReq.result; };
+        openReq.onerror = function(e) { console.warn("IDB open error", e); };
+    } else {
+        console.warn("IndexedDB not supported in this browser");
+    }
+
     window.getIndexedDB = function () { return window.idb; };
 
     // UI helper
