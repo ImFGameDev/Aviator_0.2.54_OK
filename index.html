@@ -82,6 +82,22 @@
     })();
 </script>
 
+<script>
+    (function(){
+        window._unityReady = false;
+        window._okSdkReady = false;
+
+        window._tryOkSdkInit = function() {
+            if (window._unityReady && window._okSdkReady) {
+                console.log("Both Unity and OKSDK ready - initializing OK SDK");
+                if (typeof window._sendUnityMessageSafe === 'function') {
+                    window._sendUnityMessageSafe('OkServiceMono', 'OnSdkScriptLoaded', JSON.stringify({loaded:true}));
+                }
+            }
+        };
+    })();
+</script>
+
 <!-- connect.js (виджеты OK) -->
 <script src="https://connect.ok.ru/connect.js"></script>
 
@@ -102,10 +118,9 @@
                 s.setAttribute('data-oksdk-preload', '1');
 
                 s.onload = function() {
-                    console.log("oksdk preloaded from", oksdkUrl);
-                    if (typeof window._sendUnityMessageSafe === 'function') {
-                        window._sendUnityMessageSafe('OkServiceMono', 'OnSdkScriptLoaded', JSON.stringify({loaded:true}));
-                    }
+                    console.log("✅ oksdk preloaded from", oksdkUrl);
+                    window._okSdkReady = true;
+                    window._tryOkSdkInit();
                 };
 
                 s.onerror = function() {
@@ -168,7 +183,7 @@
         streamingAssetsUrl: "StreamingAssets",
         companyName: "MainPlayer",
     productName: "Aviator",
-    productVersion: "0.2.100",
+    productVersion: "0.3.0",
     showBanner: unityShowBanner,
     };
 
@@ -190,6 +205,9 @@
             unityInstance = instance;
             window.unityInstance = instance;
 
+            window._unityReady = true;
+            console.log("Unity ready");
+
             // flush queue (при установке unityInstance)
             try {
                 if (typeof window._flushUnityQueue === 'function') {
@@ -208,20 +226,8 @@
                 }
             } catch(e){ console.warn("flush queue error", e); }
 
-            // опционально: уведомить Unity, что скрипты OK подгружены
-            try {
-                var okReady = typeof OKSDK !== 'undefined' || typeof OK !== 'undefined' || typeof ODKL !== 'undefined';
-                if (okReady) {
-                    try {
-                        // используем безопасную отправку (если helper доступен)
-                        if (typeof window._sendUnityMessageSafe === 'function') {
-                            window._sendUnityMessageSafe('OkServiceMono', 'OnSdkScriptLoaded', JSON.stringify({loaded:true}));
-                        } else if (window.unityInstance && typeof window.unityInstance.SendMessage === 'function') {
-                            window.unityInstance.SendMessage('OkServiceMono', 'OnSdkScriptLoaded', JSON.stringify({loaded:true}));
-                        }
-                    } catch(e){ console.warn(e); }
-                }
-            } catch(e){ console.warn(e); }
+            window._tryOkSdkInit();
+
         }).catch((message) => { alert(message); });
     };
     document.body.appendChild(script);
